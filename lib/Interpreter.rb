@@ -40,18 +40,64 @@ class Interpreter
     end 
 
     # evaluate an expression from the syntax tree
-    def eval_func(t)
+    # this is my child. he has many diseases
+    def eval_expr(t)
         # unwrap it
-        expr = t[:expr]
+        expr = if t.has_key?(:expr) then t[:expr] else t[t.keys[0]] end
 
-        if t.has_key?(:op)
-            # if it contains an infix operator
-            name = t[:op].to_sym
+        p expr
 
-        elsif t.has_key(:func)
-            # if it contains a function call
-   
+        # if it has a function call
+        if expr.has_key?(:func)
+            # check if the function being used is defined
+            name = expr[:func][:name][:identifier]
+            names = @definitions.map { |d| d[:name] }
+
+            # if its not defined error out
+            if !names.include?(name)
+                puts "error: undefined function #{name} being used :("
+                exit
+            end
+        
+            # pull args so they can be used to call the function
+            args = expr[:func][:args]
+
+            # index in definitions of the function
+            index = names.find { |a| a == name }
+            
+            # call the function if the function
+            return @definitions[index][:body].call if @definitions[index][:body].class == Proc
+
+            # otherwise parse the underlying expression
+            return eval_expr(@definitions[index][:body])
         end
+
+        # if it uses an infix operator
+        if expr.has_key?(:op)
+            # left operand
+            left = expr[expr.keys[0]].str
+
+            # right operand
+            right = expr[expr.keys[-1]]
+
+            puts right
+
+            # match the operator to the appropriate function definition
+            case expr[:op]
+                when :+
+                    return left + eval_expr(right)
+                when :-
+                    return left - eval_expr(right)
+                when :*
+                    return left * eval_expr(right)
+                when :/
+                    return left / eval_expr(right)
+            end
+        end
+
+        # if it reaches this point its just an expr literal
+        # TODO !!!!
+        return expr[expr.keys[0]]
     end
 
     # first pass: read all declarations
@@ -71,6 +117,17 @@ class Interpreter
         end
     end
 
+    # pretty print declarations so i have smth to show off
+    def print_declarations()
+        @definitions.each do |d|
+            # where it came from
+            source = if d[:body].class == Proc then "the interpreter" else "the program" end
+
+            # print info
+            puts "\t#{d[:name]} takes #{d[:arity]} arguments and is defined from #{source}"
+        end
+    end
+
     def run()
         # check for a valid main func
         valid_main = lambda { |d| d[:name] == "main" && d[:arity] == 0 }
@@ -78,16 +135,11 @@ class Interpreter
         # find the main function declaration
         if !@definitions.any?(valid_main)
             # tell the user to stop posting cringe
-            puts "no main function detected. :("
+            puts "error: no main function detected. :("
             exit
         end
 
         # use the main function
-        
+        puts eval_expr(@definitions[-1][:body])
     end
 end
-
-i = Interpreter.new(Parser.new.parse("main = abc(\"haha\") + 3"))
-i.find_declarations
-
-puts i.definitions

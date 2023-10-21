@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+
+require 'parslet'
+
+require_relative '../lib/Parser.rb'
+require_relative '../lib/Interpreter.rb'
+
+# name of file should be arg 1
+file = ARGV[0]
+
+# vrebose flag
+verbose = ARGV[1] == "-v" or ARGV[1] == "--verbose"
+
+if verbose
+    puts "\nreading code from #{file}\n"
+end
+
+# parse the code in the file
+syntax_tree = {}
+begin
+    input = File.read(file)
+    syntax_tree = Parser.new.parse(input)
+    puts syntax_tree
+rescue Parslet::ParseFail => err
+    puts err.parse_failure_cause.ascii_tree
+end
+
+# interpret
+i = Interpreter.new(syntax_tree)
+i.find_declarations
+
+if verbose
+    puts "functions discovered:"
+    i.print_declarations
+
+    puts "\nrunning code"
+end
+
+i.run
