@@ -40,11 +40,28 @@ class Parser < Parslet::Parser
     # valid operators
     rule(:operators) { match('[+-/\*]').as(:op) >> space? }
 
+    # function calls
+    rule(:func) {
+        (
+            # function Name
+            identifier.as(:name) >>
+
+            # parent theses
+            str('(') >>
+
+            (
+                expression >> space?
+            ).repeat.as(:args) >>
+
+            str(')') >> space?
+        ).as(:func)
+    }
+
     # expressions from datatypes and operators
     rule(:expression) { 
         # expression can be just one datatype
         (
-            (string | dec | int | identifier) >>
+            (string | dec | func | int | identifier) >>
             # or several joined by operators
             (
                 operators >>
@@ -85,10 +102,4 @@ class Parser < Parslet::Parser
             newline?
         ).repeat(1)
     }
-end
-
-begin 
-    p Parser.new.parse('add3(n) = n + 3')
-rescue Parslet::ParseFailed => err
-    puts err.parse_failure_cause.ascii_tree
 end

@@ -19,10 +19,10 @@ class Interpreter
             :-, 2, lambda { |args| args[args.keys[0]] - args[args.keys[1]] }
         ),
         $definition.new(
-            :*, 2, lambda {|args| args[args.keys[0]] * args[args.keys[1]] }
+            :*, 2, lambda { |args| args[args.keys[0]] * args[args.keys[1]] }
         ),
         $definition.new(
-            :/, 2, lambda {|args| args[args.keys[0]] / args[args.keys[1]] }
+            :/, 2, lambda { |args| args[args.keys[0]] / args[args.keys[1]] }
         )
     ]
 
@@ -38,6 +38,21 @@ class Interpreter
         # put all the globals into the program scope
         @@globals.each { |g| @definitions << g }
     end 
+
+    # evaluate an expression from the syntax tree
+    def eval_func(t)
+        # unwrap it
+        expr = t[:expr]
+
+        if t.has_key?(:op)
+            # if it contains an infix operator
+            name = t[:op].to_sym
+
+        elsif t.has_key(:func)
+            # if it contains a function call
+   
+        end
+    end
 
     # first pass: read all declarations
     def find_declarations()
@@ -56,14 +71,23 @@ class Interpreter
         end
     end
 
-    # evaluation pass
     def run()
+        # check for a valid main func
+        valid_main = lambda { |d| d[:name] == "main" && d[:arity] == 0 }
+
         # find the main function declaration
+        if !@definitions.any?(valid_main)
+            # tell the user to stop posting cringe
+            puts "no main function detected. :("
+            exit
+        end
+
+        # use the main function
         
     end
 end
 
-i = Interpreter.new(Parser.new.parse("add3(n) = n + 3"))
+i = Interpreter.new(Parser.new.parse("main = abc(\"haha\") + 3"))
 i.find_declarations
 
-p i.definitions
+puts i.definitions
